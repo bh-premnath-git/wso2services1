@@ -128,7 +128,7 @@ enable = false
 [apim.key_manager]
 service_url = "https://is-as-km:9443/services/"
 username = "admin"
-password = "Admin123"
+password = "Admin@123"
 type = "WSO2-IS"
 #service_url = "https://localhost:${mgt.transport.https.port}/services/"
 #username = "$ref{super_admin.username}"

@@ -5,6 +5,8 @@ echo "Importing IS-KM certificate into APIM truststore..."
 
 TRUSTSTORE_PATH="/home/wso2carbon/wso2am-4.6.0/repository/resources/security/client-truststore.jks"
 TRUSTSTORE_PASS="wso2carbon"
+JVM_CACERTS="/opt/java/openjdk/lib/security/cacerts"
+JVM_CACERTS_PASS="changeit"
 
 # Wait for IS-KM to be available
 echo "Waiting for IS-KM to be available..."
@@ -22,12 +24,17 @@ echo "Fetching IS-KM certificate..."
 openssl s_client -connect is-as-km:9443 -showcerts </dev/null 2>/dev/null | \
     sed -n '/BEGIN CERTIFICATE/,/END CERTIFICATE/p' > /tmp/is-km-cert.pem
 
-# Import certificate into truststore
+# Import certificate into both truststores
 if [ -f /tmp/is-km-cert.pem ]; then
-    echo "Importing certificate..."
+    echo "Importing certificate into client-truststore.jks..."
     keytool -import -alias is-km-cert -file /tmp/is-km-cert.pem \
         -keystore "$TRUSTSTORE_PATH" -storepass "$TRUSTSTORE_PASS" -noprompt || true
-    echo "Certificate imported successfully"
+    
+    echo "Importing certificate into JVM cacerts..."
+    keytool -import -alias is-km-cert -file /tmp/is-km-cert.pem \
+        -keystore "$JVM_CACERTS" -storepass "$JVM_CACERTS_PASS" -noprompt || true
+    
+    echo "Certificate imported successfully into both truststores"
     rm /tmp/is-km-cert.pem
 else
     echo "Failed to fetch certificate"
