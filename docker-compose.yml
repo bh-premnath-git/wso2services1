@@ -1,0 +1,53 @@
+services:
+  mysql:
+    image: mysql:8.0.36
+    ports:
+      - 3306
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+    volumes:
+      - ./conf/mysql/scripts:/docker-entrypoint-initdb.d
+      - ./conf/mysql/conf/my.cnf:/etc/mysql/mysql.conf.d/my.cnf
+    ulimits:
+      nofile:
+        soft: 20000
+        hard: 40000
+    command: [--ssl=0]
+    healthcheck:
+      test: ["CMD", "sh", "-c", "mysqladmin ping -uroot -proot && [ -f /var/lib/mysql/initialization-complete.flag ]"]
+      interval: 30s
+      timeout: 60s
+      retries: 5
+      start_period: 80s
+  is-as-km:
+    build: ./dockerfiles/is-as-km
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "-k", "https://localhost:9443/api/health-check/v1.0/health"]
+      interval: 10s
+      start_period: 180s
+      retries: 20
+    depends_on:
+      mysql:
+        condition: service_healthy
+    volumes:
+      - ./conf/is-as-km:/home/wso2carbon/wso2-config-volume
+    ports:
+      - "9444:9443"
+  api-manager:
+    build: ./dockerfiles/apim
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "http://localhost:9763/services/Version"]
+      interval: 10s
+      start_period: 180s
+      retries: 20
+    depends_on:
+      mysql:
+        condition: service_healthy
+      is-as-km:
+        condition: service_healthy
+    volumes:
+      - ./conf/apim:/home/wso2carbon/wso2-config-volume
+    ports:
+      - "9443:9443"
+      - "8280:8280"
+      - "8243:8243"
